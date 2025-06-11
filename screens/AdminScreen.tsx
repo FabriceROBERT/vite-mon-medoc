@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Pressable, S
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons'; // Icônes Expo
 import axios from 'axios';
+import { Picker } from '@react-native-picker/picker'; // Import Picker
 
 export default function AdminScreen() {
     const navigation = useNavigation();
@@ -10,11 +11,26 @@ export default function AdminScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [addModalVisible, setAddModalVisible] = useState(false);
+    const [users, setUsers] = useState<{ id: number; username: string; type: string }[]>([]);
     const [selectedUser, setSelectedUser] = useState<{ id: number; username: string; type: string } | null>(null);
     const [editUser, setEditUser] = useState<{ id: number; username: string; type: string } | null>(null);
     const [newUser, setNewUser] = useState<{ username: string; type: string }>({ username: '', type: '' });
+    const [reload, setReload] = useState(false);
     const spinAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Charger les données des utilisateurs depuis l'API
+        axios.get('http://10.0.2.2:3000/api/users/')
+            .then(response => {
+                setUsers(response.data);
+                console.log('Utilisateurs chargés:', response.data);
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des utilisateurs:', error);
+                Alert.alert('Erreur', 'Impossible de charger les utilisateurs. Veuillez réessayer plus tard.');
+            });
+    }, [reload]);
 
     // Fonction pour animer l'engrenage et afficher le menu
     const toggleMenu = () => {
@@ -32,6 +48,65 @@ export default function AdminScreen() {
 
         setMenuVisible(!menuVisible);
     };
+
+    const modify_user = () => {
+        axios.put(`http://10.0.2.2:3000/api/users/${editUser?.id}`, {
+            username: editUser?.username,
+            type: editUser?.type,
+        })
+        .then(response => {
+            console.log('Utilisateur modifié:', response.data);
+            setEditModalVisible(false);
+            setEditUser(null); // Réinitialiser l'utilisateur modifié
+            setReload(!reload); // Recharger les données
+            Alert.alert('Succès', 'L’utilisateur a été modifié avec succès.');
+        }
+        )
+        .catch(error => {
+            console.error('Erreur lors de la modification de l’utilisateur:', error);
+            Alert.alert('Erreur', 'Impossible de modifier l’utilisateur. Veuillez réessayer plus tard.');
+        }
+        );
+    }
+
+    const add_user = () => {
+        axios.post('http://10.0.2.2:3000/api/users', {
+            username: newUser.username,
+            type: newUser.type,
+            password: 'defaultPassword', // Mot de passe par défaut, à changer plus tard
+        })
+        .then(response => {
+            console.log('Nouvel utilisateur ajouté:', response.data);
+            setAddModalVisible(false);
+            setNewUser({ username: '', type: '' }); // Réinitialiser les champs
+            setReload(!reload); // Recharger les données
+            Alert.alert('Succès', 'L’utilisateur a été ajouté avec succès.');
+        }
+        )
+        .catch(error => {
+            console.error('Erreur lors de l’ajout de l’utilisateur:', error);
+            Alert.alert('Erreur', 'Impossible d’ajouter l’utilisateur. Veuillez réessayer plus tard.');
+        }
+        );
+    }
+
+    const delete_user = () => {
+        axios.delete(`http://10.0.2.2:3000/api/users/${selectedUser?.id}`)
+        .then(response => {
+            console.log(`Utilisateur ${selectedUser?.username} supprimé:`, response.data);
+            setModalVisible(false);
+            setSelectedUser(null); // Réinitialiser l'utilisateur sélectionné
+            setReload(!reload); // Recharger les données
+            Alert.alert('Succès', `L’utilisateur ${selectedUser?.username} a été supprimé avec succès.`);
+        }
+        )
+        .catch(error => {
+            console.error(`Erreur lors de la suppression de l’utilisateur ${selectedUser?.username}:`, error);
+            Alert.alert('Erreur', 'Impossible de supprimer l’utilisateur. Veuillez réessayer plus tard.');
+        }
+        );
+    };
+
 
     // Animation de rotation
     const spin = spinAnim.interpolate({
@@ -87,11 +162,7 @@ export default function AdminScreen() {
             </TouchableOpacity>
 
             <ScrollView style={{ width: '100%' }}>
-                {Array.from({ length: 19 }, (_, index) => ({
-                    id: index + 1,
-                    username: `User ${index + 1}`,
-                    type: index % 2 === 0 ? 'medecin' : 'hr',
-                })).map((user) => (
+                {users.map((user) => (
                     <View key={user.id} style={styles.card}>
                         <Text style={styles.cardTitle}>{user.username}</Text>
                         <Text style={styles.cardSubtitle}>Type: {user.type}</Text>
@@ -143,6 +214,7 @@ export default function AdminScreen() {
                                 style={styles.confirmButton}
                                 onPress={() => {
                                     console.log(`User ${selectedUser?.username} supprimé`);
+                                    delete_user();  
                                     setModalVisible(false);
                                 }}
                             >
@@ -173,11 +245,15 @@ export default function AdminScreen() {
                         </View>
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Type</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={editUser?.type}
-                                onChangeText={(text) => setEditUser((prev) => prev && { ...prev, type: text })}
-                            />
+                            <Picker
+                                selectedValue={editUser?.type}
+                                onValueChange={(value) => setEditUser((prev) => prev && { ...prev, type: value })}
+                                style={styles.picker}
+                            >
+                                <Picker.Item label="RH" value="rh" />
+                                <Picker.Item label="Médecin" value="medecin" />
+                                <Picker.Item label="Admin" value="admin" />
+                            </Picker>
                         </View>
                         <View style={styles.modalActions}>
                             <TouchableOpacity
@@ -190,6 +266,7 @@ export default function AdminScreen() {
                                 style={styles.confirmButton}
                                 onPress={() => {
                                     console.log(`User ${editUser?.id} modifié:`, editUser);
+                                    modify_user();
                                     setEditModalVisible(false);
                                 }}
                             >
@@ -220,11 +297,15 @@ export default function AdminScreen() {
                         </View>
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Type</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={newUser.type}
-                                onChangeText={(text) => setNewUser((prev) => ({ ...prev, type: text }))}
-                            />
+                            <Picker
+                                selectedValue={newUser.type}
+                                onValueChange={(value) => setNewUser((prev) => ({ ...prev, type: value }))}
+                                style={styles.picker}
+                            >
+                                <Picker.Item label="RH" value="rh" />
+                                <Picker.Item label="Médecin" value="medecin" />
+                                <Picker.Item label="Admin" value="admin" />
+                            </Picker>
                         </View>
                         <View style={styles.modalActions}>
                             <TouchableOpacity
@@ -237,6 +318,7 @@ export default function AdminScreen() {
                                 style={styles.confirmButton}
                                 onPress={() => {
                                     console.log('Nouvel employé ajouté:', newUser);
+                                    add_user();
                                     setAddModalVisible(false);
                                     setNewUser({ username: '', type: '' }); // Reset fields
                                 }}
@@ -398,5 +480,14 @@ const styles = StyleSheet.create({
         padding: 10,
         fontSize: 16,
         width: '100%',
+    },
+    picker: {
+        height: 50,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: 'lightgray',
+        borderRadius: 5,
+        padding: 10,
+        fontSize: 16,
     },
 });
