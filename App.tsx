@@ -1,13 +1,25 @@
-import { ScreenContent } from 'components/ScreenContent';
-import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import HomeScreen from 'screens/HomeScreen';
+import HRScreen from 'screens/HRScreen';
+import LoginScreen from 'screens/LoginScreen';
+import RegisterScreen from 'screens/RegisterScreen';
 
-import './global.css';
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <>
-      <ScreenContent title="Home" path="App.tsx"></ScreenContent>
-      <StatusBar style="auto" />
-    </>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" options={{ headerShown: false }} component={HomeScreen} />
+        <Stack.Screen name="LoginScreen" options={{ headerShown: false }} component={LoginScreen} />
+        <Stack.Screen
+          name="RegisterScreen"
+          options={{ headerShown: false }}
+          component={RegisterScreen}
+        />
+        <Stack.Screen name="HRScreen" options={{ headerShown: false }} component={HRScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
