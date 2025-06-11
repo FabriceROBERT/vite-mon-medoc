@@ -1,0 +1,402 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Pressable, ScrollView, Modal, TextInput } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Icônes Expo
+import axios from 'axios';
+
+export default function AdminScreen() {
+    const navigation = useNavigation();
+    const [menuVisible, setMenuVisible] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [addModalVisible, setAddModalVisible] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<{ id: number; username: string; type: string } | null>(null);
+    const [editUser, setEditUser] = useState<{ id: number; username: string; type: string } | null>(null);
+    const [newUser, setNewUser] = useState<{ username: string; type: string }>({ username: '', type: '' });
+    const spinAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    // Fonction pour animer l'engrenage et afficher le menu
+    const toggleMenu = () => {
+        Animated.timing(spinAnim, {
+            toValue: menuVisible ? 0 : 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+
+        Animated.timing(fadeAnim, {
+            toValue: menuVisible ? 0 : 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+
+        setMenuVisible(!menuVisible);
+    };
+
+    // Animation de rotation
+    const spin = spinAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
+    // Fonction pour confirmer la suppression du compte
+    const confirmDeleteAccount = () => {
+        Alert.alert(
+            'Supprimer mon compte',
+            'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Supprimer', onPress: () => console.log('Compte supprimé'), style: 'destructive' },
+            ]
+);
+    };
+
+    return (
+        <Pressable style={styles.container} onPress={() => menuVisible && toggleMenu()}>
+            {/* Icônes en haut */}
+            <View style={styles.header}>
+                <Ionicons name="person-circle-outline" size={32} color="black" />
+                <TouchableOpacity onPress={toggleMenu}>
+                    <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                        <Ionicons name="settings-outline" size={28} color="gray" />
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+
+            {/* Menu déroulant avec animation de fondu */}
+            {menuVisible && (
+                <Animated.View style={[styles.menu, { opacity: fadeAnim }]}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => console.log('Déconnexion')}>
+                        <Text style={styles.menuText}>Déconnexion</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem} onPress={confirmDeleteAccount}>
+                        <Text style={[styles.menuText, { color: 'red' }]}>Supprimer mon compte</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
+
+            {/* Titre */}
+            <Text style={styles.title}>Espace Admin</Text>
+
+            {/* Boutons */}
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => setAddModalVisible(true)}
+            >
+                <Text style={styles.buttonText}>Ajouter un employé</Text>
+            </TouchableOpacity>
+
+            <ScrollView style={{ width: '100%' }}>
+                {Array.from({ length: 19 }, (_, index) => ({
+                    id: index + 1,
+                    username: `User ${index + 1}`,
+                    type: index % 2 === 0 ? 'medecin' : 'hr',
+                })).map((user) => (
+                    <View key={user.id} style={styles.card}>
+                        <Text style={styles.cardTitle}>{user.username}</Text>
+                        <Text style={styles.cardSubtitle}>Type: {user.type}</Text>
+                        <View style={styles.cardActions}>
+                            <TouchableOpacity
+                                style={styles.modifyButton}
+                                onPress={() => {
+                                    setEditUser(user);
+                                    setEditModalVisible(true);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Modifier</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={() => {
+                                    setSelectedUser(user);
+                                    setModalVisible(true);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Supprimer</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ))}
+            </ScrollView>
+
+            {/* Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Confirmer la suppression</Text>
+                        <Text style={styles.modalMessage}>
+                            Êtes-vous sûr de vouloir supprimer {selectedUser?.username} ?
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.buttonText}>Annuler</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmButton}
+                                onPress={() => {
+                                    console.log(`User ${selectedUser?.username} supprimé`);
+                                    setModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Supprimer</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={editModalVisible}
+                onRequestClose={() => setEditModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Modifier l'utilisateur</Text>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Nom d'utilisateur</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={editUser?.username}
+                                onChangeText={(text) => setEditUser((prev) => prev && { ...prev, username: text })}
+                            />
+                        </View>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Type</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={editUser?.type}
+                                onChangeText={(text) => setEditUser((prev) => prev && { ...prev, type: text })}
+                            />
+                        </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setEditModalVisible(false)}
+                            >
+                                <Text style={styles.buttonText}>Annuler</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmButton}
+                                onPress={() => {
+                                    console.log(`User ${editUser?.id} modifié:`, editUser);
+                                    setEditModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Modifier</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Add Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={addModalVisible}
+                onRequestClose={() => setAddModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Ajouter un employé</Text>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Nom d'utilisateur</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={newUser.username}
+                                onChangeText={(text) => setNewUser((prev) => ({ ...prev, username: text }))}
+                            />
+                        </View>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Type</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={newUser.type}
+                                onChangeText={(text) => setNewUser((prev) => ({ ...prev, type: text }))}
+                            />
+                        </View>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setAddModalVisible(false)}
+                            >
+                                <Text style={styles.buttonText}>Annuler</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmButton}
+                                onPress={() => {
+                                    console.log('Nouvel employé ajouté:', newUser);
+                                    setAddModalVisible(false);
+                                    setNewUser({ username: '', type: '' }); // Reset fields
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Ajouter</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        </Pressable>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        paddingTop: 60,
+        paddingHorizontal: 30,
+        alignItems: 'center',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 30,
+    },
+    menu: {
+        position: 'absolute',
+        top: 100,
+        zIndex: 1,
+        right: 20,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+    },
+    menuItem: {
+        paddingVertical: 10,
+    },
+    menuText: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 40,
+    },
+    button: {
+        backgroundColor: 'skyblue',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 10,
+        marginBottom: 20,
+        width: '100%',
+    },
+    buttonText: {
+        color: 'white',
+        textAlign: 'center',
+        fontWeight: '500',
+        fontSize: 16,
+    },
+    card: {
+        backgroundColor: '#f9f9f9',
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    cardSubtitle: {
+        fontSize: 14,
+        color: 'gray',
+        marginBottom: 10,
+    },
+    cardActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    modifyButton: {
+        backgroundColor: 'lightgreen',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    deleteButton: {
+        backgroundColor: 'salmon',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    modalMessage: {
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    cancelButton: {
+        backgroundColor: 'gray',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    confirmButton: {
+        backgroundColor: 'red',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    inputGroup: {
+        width: '100%',
+        marginBottom: 15,
+    },
+    inputLabel: {
+        fontSize: 16,
+        marginBottom: 5,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: 'lightgray',
+        borderRadius: 5,
+        padding: 10,
+        fontSize: 16,
+        width: '100%',
+    },
+});

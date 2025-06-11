@@ -10,7 +10,7 @@ export default function LoginScreen() {
   const handleLogin = () => {
     console.log('Email:', email);
     console.log('Mot de passe:', password);
-    navigation.navigate('HRScreen' as never);
+    navigation.navigate('AdminScreen' as never);
   };
 
   return (
