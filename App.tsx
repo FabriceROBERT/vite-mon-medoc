@@ -8,6 +8,7 @@ import DoctorScreen from 'screens/DoctorScreen';
 import AuthProvider from 'provider/AuthProvider';
 import SplashScreen from 'screens/SplashScreen';
 import { useAuth } from 'context/useAuth';
+import AdminScreen from 'screens/AdminScreen';
 
 const Stack = createStackNavigator();
 
