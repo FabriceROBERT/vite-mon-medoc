@@ -39,10 +39,10 @@ export default function Header() {
 
   return (
     <View style={styles.header}>
-      <Ionicons name="person-circle-outline" size={32} color="black" />
+      <Ionicons name="person-circle-outline" size={32} color="skyblue" />
       <TouchableOpacity onPress={toggleMenu}>
         <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <Ionicons name="settings-outline" size={28} color="gray" />
+          <Ionicons name="settings-outline" size={28} color="skyblue" />
         </Animated.View>
       </TouchableOpacity>
 
@@ -69,6 +69,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginBottom: 30,
+    backgroundColor: '#fff',
+    paddingTop: 30,
+    paddingHorizontal: 10,
   },
   menu: {
     zIndex: 1,

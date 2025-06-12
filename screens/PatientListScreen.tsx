@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Header from 'components/Header';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -47,7 +48,6 @@ export default function PatientListScreen() {
       <Text style={styles.info}>Statut : {item.statut}</Text>
       <Text style={styles.info}>Téléphone : {item.numero_de_telephone}</Text>
       <Text style={styles.info}>Mail : {item.mail}</Text>
-      {/* Ajoute ici d'autres champs si tu veux */}
     </TouchableOpacity>
   );
 

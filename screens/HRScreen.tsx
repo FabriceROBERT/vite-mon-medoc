@@ -1,59 +1,25 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import AddPatientModal from 'modals/AddPatientModal';
 import Header from 'components/Header';
+import { useAuth } from 'context/useAuth';
 
 export default function HRScreen() {
+  const { user, loading } = useAuth();
   const navigation = useNavigation();
-  const [menuVisible, setMenuVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Fonction pour animer l'engrenage et afficher le menu
-  const toggleMenu = () => {
-    Animated.timing(spinAnim, {
-      toValue: menuVisible ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    Animated.timing(fadeAnim, {
-      toValue: menuVisible ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    setMenuVisible(!menuVisible);
-  };
-
-  // Animation de rotation
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
-
-  // Fonction pour confirmer la suppression du compte
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Supprimer mon compte',
-      'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', onPress: () => console.log('Compte supprimé'), style: 'destructive' },
-      ]
-    );
-  };
+  useEffect(() => {
+    if (!loading && (!user || user.user.type !== 'rh')) {
+      navigation.navigate('LoginScreen' as never);
+    }
+  }, [user, loading]);
 
   return (
-    <Pressable style={styles.container} onPress={() => menuVisible && toggleMenu()}>
+    <Pressable style={styles.container}>
       {/* Icônes en haut */}
-      <View style={styles.header}>
-        <Header />
-      </View>
+      <Header />
 
       {/* Titre */}
       <Text style={styles.title}>Espace RH</Text>
@@ -79,12 +45,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 60,
     paddingHorizontal: 30,
-    alignItems: 'center',
-  },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 30,
-    paddingHorizontal: 20,
     alignItems: 'center',
   },
   menu: {
