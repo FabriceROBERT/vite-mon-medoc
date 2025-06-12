@@ -1,53 +1,68 @@
-import { View, Text, Modal, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, Modal, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
 import axios from 'axios';
 // @ts-ignore
 import { BASE_URL } from '@env';
 
-type DeleteUserModalProps = {
+type DeletePatientModalProps = {
   visible: boolean;
-  user: { id: number; username: string; type: string } | null;
+  patient: {
+    id: number;
+    nom: string;
+    prenom: string;
+    age: number;
+    poids: number;
+    taille: number;
+    traitement_en_cours: string;
+    medicament: string;
+    medecin: string;
+    notes: string;
+    rdv: Date;
+    statut: string;
+    numero_de_telephone: number;
+    mail: string;
+    created_at: Date;
+  } | null;
   onClose: () => void;
-  onUserDeleted: () => void;
+  onPatientDeleted: () => void;
 };
 
-export default function DeleteUserModal({
+export default function DeletePatientModal({
   visible,
-  user,
+  patient,
   onClose,
-  onUserDeleted,
-}: DeleteUserModalProps) {
-  const delete_user = () => {
-    if (!user) return;
+  onPatientDeleted,
+}: DeletePatientModalProps) {
+  const delete_patient = () => {
+    if (!patient) return;
 
     axios
-      .delete(`http://${BASE_URL}/api/users/${user.id}`)
+      .delete(`http://${BASE_URL}/api/patients/${patient.id}`)
       .then(() => {
-        onUserDeleted();
+        onPatientDeleted();
         onClose();
-        Alert.alert('Succès', `L’utilisateur ${user.username} a été supprimé avec succès.`);
+        Alert.alert('Succès', `L’utilisateur ${patient.nom} a été supprimé avec succès.`);
       })
-      .catch(() => {
+      .catch((e) => {
         Alert.alert(
           'Erreur',
           'Impossible de supprimer l’utilisateur. Veuillez réessayer plus tard.'
         );
       });
   };
-
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Confirmer la suppression</Text>
           <Text style={styles.modalMessage}>
-            Êtes-vous sûr de vouloir supprimer {user?.username} ?
+            Êtes-vous sûr de vouloir supprimer {patient?.nom} {patient?.prenom} ?
           </Text>
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.buttonText}>Annuler</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmButton} onPress={delete_user}>
+            <TouchableOpacity style={styles.confirmButton} onPress={delete_patient}>
               <Text style={styles.buttonText}>Supprimer</Text>
             </TouchableOpacity>
           </View>

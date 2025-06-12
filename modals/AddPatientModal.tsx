@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   View,
   Text,
@@ -8,76 +7,179 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+// @ts-ignore
+import { BASE_URL } from '@env';
 
-export default function AddPatientModal({
-  visible,
-  onClose,
-}: {
+type Props = {
   visible: boolean;
   onClose: () => void;
-}) {
-  const [open, setOpen] = useState(false);
+};
+
+export default function AddPatientModal({ visible, onClose }: Props) {
+  // Champs classiques
   const [firstName, setFirstName] = useState('');
-  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [notes, setNotes] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [note, setNote] = useState('');
+  const [medicine, setMedicine] = useState('');
 
-  const doctorsList = [
-    { id: '1', name: 'Dr. Dupont' },
-    { id: '2', name: 'Dr. Martin' },
-    { id: '3', name: 'Dr. Leroy' },
-  ];
+  // Initialiser appointment à null pour afficher un champ vide
+  const [appointment, setAppointment] = useState<Date | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
-  const isValid = name && firstName && age && selectedDoctor;
+  // Date Picker
+  const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      setTempDate(selectedDate);
+    }
+  };
 
-  const handleAddPatient = () => {
+  const formatCustomDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+
+    const formatted = new Intl.DateTimeFormat('fr-FR', options).format(date);
+    const withH = formatted.replace(/(\d{2}):(\d{2})/, '$1h$2');
+
+    return `Le ${withH}`;
+  };
+
+  // Picker pour la sélection du médecin
+  const [doctorOpen, setDoctorOpen] = useState(false);
+  const [doctorValue, setDoctorValue] = useState<string | null>(null);
+  const [doctorItems, setDoctorItems] = useState<{ label: string; value: string }[]>([]);
+
+  // Picker pour "Traitement en cours ?" (Oui / Non)
+  const [processingOpen, setProcessingOpen] = useState(false);
+  const [processingValue, setProcessingValue] = useState<string | null>(null);
+  const [processingItems, setProcessingItems] = useState([
+    { label: 'Oui', value: 'true' },
+    { label: 'Non', value: 'false' },
+  ]);
+
+  const formatAppointment = (isoString: string) => {
+    const date = new Date(isoString);
+
+    const optionsDate: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    };
+
+    const optionsTime: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    };
+
+    const formattedDate = date.toLocaleDateString('fr-FR', optionsDate);
+    const formattedTime = date.toLocaleTimeString('fr-FR', optionsTime).replace(':', 'h');
+
+    return `${formattedDate} à ${formattedTime}`;
+  };
+
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusItems, setStatusItems] = useState([
+    { label: 'En cours de traitement', value: 'en_cours' },
+    { label: 'Guéri', value: 'guéri' },
+    { label: 'À surveiller', value: 'a_surveiller' },
+    { label: 'Stable', value: 'stable' },
+    { label: 'Critique', value: 'critique' },
+  ]);
+
+  const isValid = firstName && lastName && age && doctorValue;
+
+  useEffect(() => {
+    if (!visible) return;
+    const fetchDoctors = async () => {
+      try {
+        const { data } = await axios.get(`http://${BASE_URL}/api/users`);
+        const medecins = data
+          .filter((u: any) => u.type === 'medecin')
+          .map((m: any) => ({ label: m.username, value: m.id }));
+        setDoctorItems(medecins);
+      } catch (e) {
+        Alert.alert('Erreur', 'Impossible de récupérer les médecins.');
+      }
+    };
+    fetchDoctors();
+  }, [visible]);
+
+  // Réinitialiser les champs à l'ouverture du modal
+  useEffect(() => {
+    if (visible) {
+      setFirstName('');
+      setLastName('');
+      setAge('');
+      setWeight('');
+      setHeight('');
+      setPhone('');
+      setEmail('');
+      setNote('');
+      setMedicine('');
+      setAppointment(null);
+      setStatus('');
+      setDoctorValue(null);
+      setProcessingValue(null);
+    }
+  }, [visible]);
+
+  const handleAdd = async () => {
     if (!isValid) {
-      alert('Merci de remplir tous les champs obligatoires');
+      Alert.alert('Oups', 'Merci de remplir les champs obligatoires (*)');
       return;
     }
-    console.log('Patient ajouté:', {
-      name,
-      firstName,
-      age,
-      weight,
-      height,
-      phone,
-      email,
-      notes,
-      doctor: doctorsList.find((d) => d.id === selectedDoctor)?.name,
-    });
-    // Réinitialise les champs si besoin
-    setName('');
-    setFirstName('');
-    setAge('');
-    setWeight('');
-    setHeight('');
-    setPhone('');
-    setEmail('');
-    setNotes('');
-    setSelectedDoctor(null);
-    setOpen(false);
-    onClose();
+    try {
+      await axios.post(`http://${BASE_URL}/api/patients`, {
+        lastName,
+        firstName,
+        age: Number(age),
+        weight: weight ? Number(weight.replace(',', '.')) : null,
+        height: height ? Number(height.replace(',', '.')) : null,
+        phone,
+        email,
+        processingInProgress: processingValue === 'true',
+        medicine,
+        appointment,
+        status,
+        note,
+        doctorId: doctorValue,
+      });
+      Alert.alert('Succès', 'Patient ajouté.');
+      onClose();
+    } catch {
+      Alert.alert('Erreur', 'Ajout impossible.');
+    }
   };
 
   return (
-    <Modal transparent animationType="slide" visible={visible}>
+    <Modal visible={visible} style={{ backgroundColor: 'white' }} animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalContainer}>
+        style={styles.backdrop}>
         <KeyboardAwareScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.modalContent}>
+          <View style={styles.card}>
             <View style={styles.header}>
               <Text style={styles.title}>Ajouter un patient</Text>
               <TouchableOpacity onPress={onClose}>
@@ -89,8 +191,8 @@ export default function AddPatientModal({
               style={styles.input}
               placeholder="Nom*"
               placeholderTextColor="gray"
-              value={name}
-              onChangeText={setName}
+              value={lastName}
+              onChangeText={setLastName}
             />
             <TextInput
               style={styles.input}
@@ -102,25 +204,23 @@ export default function AddPatientModal({
             <TextInput
               style={styles.input}
               placeholder="Âge*"
-              placeholderTextColor="gray"
               keyboardType="numeric"
+              placeholderTextColor="gray"
               value={age}
               onChangeText={setAge}
             />
 
-            {/* Sélecteur de médecin */}
+            {/* Sélection du médecin */}
             <DropDownPicker
               listMode="MODAL"
-              open={open}
-              setOpen={setOpen}
-              value={selectedDoctor}
-              setValue={setSelectedDoctor}
-              items={doctorsList.map((doctor) => ({
-                label: doctor.name,
-                value: doctor.id,
-              }))}
-              style={styles.input}
+              open={doctorOpen}
+              setOpen={setDoctorOpen}
+              value={doctorValue}
+              setValue={setDoctorValue}
+              items={doctorItems}
+              setItems={setDoctorItems}
               placeholder="Sélectionnez un médecin*"
+              style={styles.input}
               containerStyle={{ width: '100%', marginBottom: 15 }}
               zIndex={1000}
             />
@@ -128,48 +228,113 @@ export default function AddPatientModal({
             <TextInput
               style={styles.input}
               placeholder="Poids (kg)"
-              placeholderTextColor="gray"
               keyboardType="numeric"
+              placeholderTextColor="gray"
               value={weight}
               onChangeText={setWeight}
             />
             <TextInput
               style={styles.input}
               placeholder="Taille (cm)"
-              placeholderTextColor="gray"
               keyboardType="numeric"
+              placeholderTextColor="gray"
               value={height}
               onChangeText={setHeight}
             />
             <TextInput
               style={styles.input}
-              placeholder="Numéro de téléphone"
-              placeholderTextColor="gray"
+              placeholder="Téléphone"
               keyboardType="phone-pad"
+              placeholderTextColor="gray"
               value={phone}
               onChangeText={setPhone}
             />
             <TextInput
               style={styles.input}
-              placeholder="Email du patient"
-              placeholderTextColor="gray"
+              placeholder="Email"
               keyboardType="email-address"
+              placeholderTextColor="gray"
               value={email}
               onChangeText={setEmail}
             />
             <TextInput
-              style={[styles.input, styles.notes]}
-              placeholder="Notes (Antécédents, remarques…)"
+              style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+              placeholder="Notes…"
               placeholderTextColor="gray"
-              value={notes}
-              onChangeText={setNotes}
               multiline
+              value={note}
+              onChangeText={setNote}
             />
 
+            {/* Sélection Oui/Non pour "Traitement en cours" */}
+            <DropDownPicker
+              open={processingOpen}
+              value={processingValue}
+              items={processingItems}
+              setOpen={setProcessingOpen}
+              setItems={setProcessingItems}
+              setValue={setProcessingValue}
+              placeholder="Traitement en cours ?"
+              style={styles.picker}
+              listMode="MODAL"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Medicaments"
+              placeholderTextColor="gray"
+              value={medicine}
+              onChangeText={setMedicine}
+            />
+
+            {/* Champ Date "Rendez-vous" */}
+            <TouchableOpacity onPress={showDatePicker} style={styles.input}>
+              <Text style={{ color: appointment ? 'black' : 'gray', fontSize: 16 }}>
+                {appointment ? formatCustomDate(appointment) : 'Rendez-vous'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Affichage du DateTimePicker */}
+            {isDatePickerVisible && (
+              <View style={{ alignItems: 'center' }}>
+                <DateTimePicker
+                  value={tempDate}
+                  mode="datetime"
+                  display={Platform.OS === 'android' ? 'default' : 'spinner'}
+                  onChange={onChangeDate}
+                  locale="fr-FR"
+                  textColor="black"
+                  style={styles.datePicker}
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    setAppointment(tempDate);
+                    hideDatePicker();
+                  }}
+                  style={[styles.button, { marginTop: 10 }]}>
+                  <Text style={styles.buttonDateValidate}>Valider la date</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={{ zIndex: 900 }}>
+              <DropDownPicker
+                open={statusOpen}
+                value={status}
+                items={statusItems}
+                setOpen={setStatusOpen}
+                setItems={setStatusItems}
+                setValue={setStatus}
+                placeholder="Sélectionnez un statut"
+                style={styles.picker}
+                listMode="MODAL" // Pour éviter les erreurs de VirtualizedList dans ScrollView
+              />
+            </View>
+
             <TouchableOpacity
-              style={[styles.button, !isValid && { backgroundColor: '#a0aec0' }]}
-              onPress={handleAddPatient}
-              disabled={!isValid}>
+              style={[styles.button, !isValid && styles.buttonDisabled]}
+              disabled={!isValid}
+              onPress={handleAdd}>
               <Text style={styles.buttonText}>Valider</Text>
             </TouchableOpacity>
           </View>
@@ -180,37 +345,38 @@ export default function AddPatientModal({
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  backdrop: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  modalContent: {
+  picker: {
+    width: '100%',
+    marginBottom: 20,
+    borderColor: 'skyblue',
+  },
+  datePicker: {
+    width: 200,
+    height: 200,
+  },
+  card: {
+    backgroundColor: 'white',
     marginTop: 60,
     width: '100%',
     maxWidth: 400,
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
   header: {
-    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
+  title: { fontSize: 20, fontWeight: 'bold' },
   input: {
     width: '100%',
     padding: 12,
@@ -219,19 +385,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
   },
-  notes: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
   button: {
     backgroundColor: 'skyblue',
-    paddingVertical: 12,
+    padding: 5,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 10,
+    marginHorizontal: 10,
+    marginBottom: 15,
+    borderRadius: 25,
+    alignItems: 'center',
   },
-  buttonText: {
+  buttonDisabled: { backgroundColor: '#a0aec0' },
+
+  buttonDateValidate: {
     color: 'white',
-    fontWeight: 'bold',
+    backgroundColor: 'skyblue',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
   },
+
+  buttonText: { color: 'white', fontWeight: 'bold', padding: 10 },
 });

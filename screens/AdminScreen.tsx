@@ -1,27 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Alert,
-  Pressable,
-  ScrollView,
-  Modal,
-  TextInput,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'; // Icônes Expo
+// @ts-ignore
+import { BASE_URL } from '@env';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import axios from 'axios';
-import { Picker } from '@react-native-picker/picker'; // Import Picker
-import Header from 'components/Header';
-import EditModal from 'modals/EditUserModal';
-import AddModal from 'modals/AddUserModal';
-import DeleteModal from 'modals/DeleteUserModal';
+import Header from '../components/Header';
+import EditUserModal from '../modals/EditUserModal';
+import AddUserModal from '../modals/AddUserModal';
+import DeleteUserModal from '../modals/DeleteUserModal';
 
 export default function AdminScreen() {
-  const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [users, setUsers] = useState<
@@ -40,26 +27,22 @@ export default function AdminScreen() {
   const [reload, setReload] = useState(false);
 
   const handleUserAdded = () => {
-    console.log('Utilisateur ajouté, recharge les données...');
     setReload(!reload);
   };
 
   const handleUserUpdated = () => {
-    console.log('Utilisateur mis à jour, recharge les données...');
     setReload(!reload);
   };
 
   const handleUserDeleted = () => {
-    console.log('Utilisateur supprimé, recharge les données...');
     setReload((prev) => !prev);
   };
 
   useEffect(() => {
     axios
-      .get('http://172.20.10.11:3000/api/users/')
+      .get(`http://${BASE_URL}/api/users/`)
       .then((response) => {
         setUsers(response.data);
-        console.log('Utilisateurs chargés:', response.data);
       })
       .catch((error) => {
         console.error('Erreur lors du chargement des utilisateurs:', error);
@@ -80,7 +63,7 @@ export default function AdminScreen() {
         <Text style={styles.buttonText}>Ajouter un employé</Text>
       </TouchableOpacity>
 
-      <ScrollView style={{ width: '100%' }}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'stretch' }}>
         {users.map((user) => (
           <View key={user.id} style={styles.card}>
             <Text style={styles.cardTitle}>{user.username}</Text>
@@ -102,10 +85,8 @@ export default function AdminScreen() {
               <TouchableOpacity
                 style={styles.modifyButton}
                 onPress={() => {
-                  console.log('Ouverture du modal avec user:', user);
                   setEditUser(user);
                   setEditModalVisible(true);
-                  console.log('editModalVisible:', editModalVisible);
                 }}>
                 <Text style={styles.buttonText}>Modifier</Text>
               </TouchableOpacity>
@@ -123,20 +104,20 @@ export default function AdminScreen() {
       </ScrollView>
 
       {/* Add Modal */}
-      <AddModal
+      <AddUserModal
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onUserAdded={handleUserAdded}
       />
       {/* Edit Modal */}
-      <EditModal
+      <EditUserModal
         visible={editModalVisible}
         user={editUser}
         onClose={() => setEditModalVisible(false)}
         onUserUpdated={handleUserUpdated}
       />
       {/* Delete Modal */}
-      <DeleteModal
+      <DeleteUserModal
         visible={deleteModalVisible}
         user={selectedUser}
         onClose={() => setDeleteModalVisible(false)}

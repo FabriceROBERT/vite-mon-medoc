@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AddPatientModal from 'modals/AddPatientModal';
-import Header from 'components/Header';
-import { useAuth } from 'context/useAuth';
+import AddPatientModal from '../modals/AddPatientModal';
+import Header from '../components/Header';
+import { useAuth } from '../context/useAuth';
 
 export default function HRScreen() {
   const { user, loading } = useAuth();

@@ -2,15 +2,22 @@ import { View, Text, Modal, TextInput, TouchableOpacity, Alert, StyleSheet } fro
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
+// @ts-ignore
+import { BASE_URL } from '@env';
 
-type EditModalProps = {
+type EditUserModalProps = {
   visible: boolean;
   user: { id: number; username: string; type: string } | null;
   onClose: () => void;
   onUserUpdated: () => void;
 };
 
-export default function EditUserModal({ visible, user, onClose, onUserUpdated }: EditModalProps) {
+export default function EditUserModal({
+  visible,
+  user,
+  onClose,
+  onUserUpdated,
+}: EditUserModalProps) {
   const [username, setUsername] = useState('');
   const [typeValue, setTypeValue] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -30,7 +37,7 @@ export default function EditUserModal({ visible, user, onClose, onUserUpdated }:
   const modify_user = () => {
     if (!user) return;
     axios
-      .put(`http://172.20.10.11:3000/api/users/${user.id}`, {
+      .put(`http://${BASE_URL}/api/users/${user.id}`, {
         username,
         type: typeValue,
       })

@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { BASE_URL } from '@env';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useAuth } from 'context/useAuth';
+import { useAuth } from '../context/useAuth';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -15,7 +16,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       setIsSubmitting(true);
-      const response = await axios.post('http://172.20.10.11:3000/api/users/login', {
+      const response = await axios.post(`http://${BASE_URL}/api/users/login`, {
         username,
         password,
       });
@@ -27,7 +28,6 @@ export default function LoginScreen() {
       }
     } catch (error) {
       Alert.alert("Nom d'utilisateur ou mot de passe incorrect.");
-      console.log('Erreur axios:', error);
     } finally {
       setIsSubmitting(false);
     }

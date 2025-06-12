@@ -2,14 +2,16 @@ import { View, Text, Modal, TextInput, TouchableOpacity, Alert, StyleSheet } fro
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
+// @ts-ignore
+import { BASE_URL } from '@env';
 
-type AddModalProps = {
+type AddUserModalProps = {
   visible: boolean;
   onClose: () => void;
   onUserAdded: () => void;
 };
 
-export default function AddUserModal({ visible, onClose, onUserAdded }: AddModalProps) {
+export default function AddUserModal({ visible, onClose, onUserAdded }: AddUserModalProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [typeValue, setTypeValue] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function AddUserModal({ visible, onClose, onUserAdded }: AddModal
       return;
     }
     axios
-      .post('http://172.20.10.11:3000/api/users', {
+      .post(`http://${BASE_URL}/api/users`, {
         username,
         type: typeValue,
         password,
