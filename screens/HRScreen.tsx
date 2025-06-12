@@ -1,11 +1,15 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'; // Icônes Expo
+import { Ionicons } from '@expo/vector-icons';
+import AddPatientModal from 'modals/AddPatientModal';
+import Header from 'components/Header';
 
 export default function HRScreen() {
   const navigation = useNavigation();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
   const spinAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -48,35 +52,17 @@ export default function HRScreen() {
     <Pressable style={styles.container} onPress={() => menuVisible && toggleMenu()}>
       {/* Icônes en haut */}
       <View style={styles.header}>
-        <Ionicons name="person-circle-outline" size={32} color="black" />
-        <TouchableOpacity onPress={toggleMenu}>
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Ionicons name="settings-outline" size={28} color="gray" />
-          </Animated.View>
-        </TouchableOpacity>
+        <Header />
       </View>
-
-      {/* Menu déroulant avec animation de fondu */}
-      {menuVisible && (
-        <Animated.View style={[styles.menu, { opacity: fadeAnim }]}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => console.log('Déconnexion')}>
-            <Text style={styles.menuText}>Déconnexion</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={confirmDeleteAccount}>
-            <Text style={[styles.menuText, { color: 'red' }]}>Supprimer mon compte</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
 
       {/* Titre */}
       <Text style={styles.title}>Espace RH</Text>
 
       {/* Boutons */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('AddPatientScreen' as never)}>
+      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
         <Text style={styles.buttonText}>Ajouter un patient</Text>
       </TouchableOpacity>
+      <AddPatientModal visible={modalVisible} onClose={() => setModalVisible(false)} />
 
       <TouchableOpacity
         style={styles.button}
@@ -96,10 +82,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 30,
+    backgroundColor: '#fff',
+    paddingTop: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   menu: {
     position: 'absolute',
