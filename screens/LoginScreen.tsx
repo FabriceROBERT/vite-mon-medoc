@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react';
+// @ts-ignore
 import { BASE_URL } from '@env';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../context/useAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -22,6 +24,7 @@ export default function LoginScreen() {
       });
 
       if (response.status === 200 && response.data.token) {
+        await AsyncStorage.setItem('token', response.data.token);
         await login(response.data);
       } else {
         Alert.alert('Erreur', "Type d'utilisateur non reconnu.");
@@ -35,7 +38,10 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (loading || !user) return;
-    const type = user.user.type;
+
+    const type = user?.user?.type;
+    if (!type) return;
+
     if (type === 'rh') {
       navigation.navigate('HRScreen' as never);
     } else if (type === 'medecin') {

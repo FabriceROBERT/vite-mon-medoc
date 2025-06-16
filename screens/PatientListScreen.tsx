@@ -15,8 +15,13 @@ import DeletePatientModal from '../modals/DeletePatientModal';
 import EditPatientModal from '../modals/EditPatientModal';
 // @ts-ignore
 import { BASE_URL } from '@env';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
 
 export default function PatientListScreen() {
+  const navigation =
+    useNavigation<StackNavigationProp<RootStackParamList, 'PatientDetailScreen'>>();
   const [patientsData, setPatientsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +97,9 @@ export default function PatientListScreen() {
   };
 
   const renderPatient = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('PatientDetailScreen', { patientId: Number(item.id) })}>
       <View
         style={{
           flexDirection: 'row',
@@ -105,19 +112,37 @@ export default function PatientListScreen() {
           <Text style={styles.name}>
             <Text style={{ textTransform: 'uppercase', fontWeight: 'bold', fontStyle: 'italic' }}>
               {item.nom}
+              {'  '}
             </Text>
-            {'  '}
             {item.prenom}
           </Text>
 
-          <Text style={styles.info}>Âge : {item.age} ans</Text>
+          <Text style={styles.info}>
+            Âge :{' '}
+            {item.age ? (
+              <Text style={styles.data}>{item.age} ans </Text>
+            ) : (
+              <Text style={styles.noData}>Non renseigné</Text>
+            )}{' '}
+          </Text>
           <Text style={styles.status}>Statut :</Text>
           <View style={styles.labelContainer}>
-            <Text style={styles.label}>{item.statut ? item.statut : 'Non renseigné'}</Text>
+            <Text style={styles.label}>
+              {item.statut ? item.statut : <Text style={styles.label}>Non renseigné</Text>}
+            </Text>
           </View>
 
-          <Text style={styles.info}>Téléphone : {item.numero_de_telephone}</Text>
-          <Text style={styles.info}>Mail : {item.mail}</Text>
+          <Text style={styles.info}>
+            Téléphone :{' '}
+            {item.numero_de_telephone ? (
+              item.numero_de_telephone
+            ) : (
+              <Text style={styles.noData}>Non renseigné</Text>
+            )}
+          </Text>
+          <Text style={styles.info}>
+            Mail : {item.mail ? item.mail : <Text style={styles.noData}>Non renseigné</Text>}
+          </Text>
         </View>
         <View style={styles.buttonContainer}>
           <Pressable
@@ -193,6 +218,12 @@ export default function PatientListScreen() {
 }
 
 const styles = StyleSheet.create({
+  data: { fontSize: 16, marginBottom: 10, fontWeight: 600, color: '#666' },
+  noData: {
+    fontStyle: 'italic',
+    color: 'gray',
+    fontWeight: '300',
+  },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -214,7 +245,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-
   buttonDelete: {
     backgroundColor: 'red',
   },
@@ -250,9 +280,13 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   info: {
-    color: '#555',
-    fontSize: 15,
-    marginVertical: 5,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'black',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    marginTop: 12,
+    marginLeft: 2,
   },
   status: {
     fontSize: 15,

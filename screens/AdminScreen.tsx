@@ -7,8 +7,12 @@ import Header from '../components/Header';
 import EditUserModal from '../modals/EditUserModal';
 import AddUserModal from '../modals/AddUserModal';
 import DeleteUserModal from '../modals/DeleteUserModal';
+import { useAuth } from '../context/useAuth';
+import { useNavigation } from '@react-navigation/native';
 
 export default function AdminScreen() {
+  const { user, loading } = useAuth();
+  const navigation = useNavigation();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [users, setUsers] = useState<
@@ -39,13 +43,18 @@ export default function AdminScreen() {
   };
 
   useEffect(() => {
+    if (!loading && (!user || user.user.type !== 'admin')) {
+      navigation.navigate('Home' as never);
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
     axios
       .get(`http://${BASE_URL}/api/users/`)
       .then((response) => {
         setUsers(response.data);
       })
       .catch((error) => {
-        console.error('Erreur lors du chargement des utilisateurs:', error);
         Alert.alert(
           'Erreur',
           'Impossible de charger les utilisateurs. Veuillez réessayer plus tard.'

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -106,6 +107,7 @@ export default function AddPatientModal({ visible, onClose }: Props) {
     { label: 'À surveiller', value: 'a_surveiller' },
     { label: 'Stable', value: 'stable' },
     { label: 'Critique', value: 'critique' },
+    { label: 'Mort', value: 'mort' },
   ]);
 
   const isValid = firstName && lastName && age && doctorValue;
@@ -177,174 +179,263 @@ export default function AddPatientModal({ visible, onClose }: Props) {
     <Modal visible={visible} style={{ backgroundColor: 'white' }} animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.backdrop}>
-        <KeyboardAwareScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.card}>
+        style={{ flex: 1 }}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
             <View style={styles.header}>
               <Text style={styles.title}>Ajouter un patient</Text>
               <TouchableOpacity onPress={onClose}>
                 <Ionicons name="close" size={24} color="gray" />
               </TouchableOpacity>
             </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Nom*"
-              placeholderTextColor="gray"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Prénom*"
-              placeholderTextColor="gray"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Âge*"
-              keyboardType="numeric"
-              placeholderTextColor="gray"
-              value={age}
-              onChangeText={setAge}
-            />
-
-            {/* Sélection du médecin */}
-            <DropDownPicker
-              listMode="MODAL"
-              open={doctorOpen}
-              setOpen={setDoctorOpen}
-              value={doctorValue}
-              setValue={setDoctorValue}
-              items={doctorItems}
-              setItems={setDoctorItems}
-              placeholder="Sélectionnez un médecin*"
-              style={styles.input}
-              containerStyle={{ width: '100%', marginBottom: 15 }}
-              zIndex={1000}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Poids (kg)"
-              keyboardType="numeric"
-              placeholderTextColor="gray"
-              value={weight}
-              onChangeText={setWeight}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Taille (cm)"
-              keyboardType="numeric"
-              placeholderTextColor="gray"
-              value={height}
-              onChangeText={setHeight}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Téléphone"
-              keyboardType="phone-pad"
-              placeholderTextColor="gray"
-              value={phone}
-              onChangeText={setPhone}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              keyboardType="email-address"
-              placeholderTextColor="gray"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-              placeholder="Notes…"
-              placeholderTextColor="gray"
-              multiline
-              value={note}
-              onChangeText={setNote}
-            />
-
-            {/* Sélection Oui/Non pour "Traitement en cours" */}
-            <DropDownPicker
-              open={processingOpen}
-              value={processingValue}
-              items={processingItems}
-              setOpen={setProcessingOpen}
-              setItems={setProcessingItems}
-              setValue={setProcessingValue}
-              placeholder="Traitement en cours ?"
-              style={styles.picker}
-              listMode="MODAL"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Medicaments"
-              placeholderTextColor="gray"
-              value={medicine}
-              onChangeText={setMedicine}
-            />
-
-            {/* Champ Date "Rendez-vous" */}
-            <TouchableOpacity onPress={showDatePicker} style={styles.input}>
-              <Text style={{ color: appointment ? 'black' : 'gray', fontSize: 16 }}>
-                {appointment ? formatCustomDate(appointment) : 'Rendez-vous'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Affichage du DateTimePicker */}
-            {isDatePickerVisible && (
-              <View style={{ alignItems: 'center' }}>
-                <DateTimePicker
-                  value={tempDate}
-                  mode="datetime"
-                  display={Platform.OS === 'android' ? 'default' : 'spinner'}
-                  onChange={onChangeDate}
-                  locale="fr-FR"
-                  textColor="black"
-                  style={styles.datePicker}
-                />
-                <TouchableOpacity
-                  onPress={() => {
-                    setAppointment(tempDate);
-                    hideDatePicker();
-                  }}
-                  style={[styles.button, { marginTop: 10 }]}>
-                  <Text style={styles.buttonDateValidate}>Valider la date</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={{ zIndex: 900 }}>
-              <DropDownPicker
-                open={statusOpen}
-                value={status}
-                items={statusItems}
-                setOpen={setStatusOpen}
-                setItems={setStatusItems}
-                setValue={setStatus}
-                placeholder="Sélectionnez un statut"
-                style={styles.picker}
-                listMode="MODAL" // Pour éviter les erreurs de VirtualizedList dans ScrollView
+            <ScrollView
+              style={{ width: '100%' }}
+              contentContainerStyle={{ alignItems: 'center', paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}>
+              <Text style={styles.sectionTitle}>Identité</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nom*"
+                placeholderTextColor="gray"
+                value={lastName}
+                onChangeText={setLastName}
               />
-            </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Prénom*"
+                placeholderTextColor="gray"
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+              <Text style={styles.sectionTitle}>Âge</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Âge*"
+                keyboardType="numeric"
+                placeholderTextColor="gray"
+                value={age}
+                onChangeText={setAge}
+              />
 
-            <TouchableOpacity
-              style={[styles.button, !isValid && styles.buttonDisabled]}
-              disabled={!isValid}
-              onPress={handleAdd}>
-              <Text style={styles.buttonText}>Valider</Text>
-            </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Caractéristiques</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Poids (kg)"
+                keyboardType="numeric"
+                placeholderTextColor="gray"
+                value={weight}
+                onChangeText={setWeight}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Taille (cm)"
+                keyboardType="numeric"
+                placeholderTextColor="gray"
+                value={height}
+                onChangeText={setHeight}
+              />
+              {/* Sélection du médecin */}
+              <Text style={styles.sectionTitle}>Médecin à prendre en charge</Text>
+              <DropDownPicker
+                listMode="MODAL"
+                open={doctorOpen}
+                setOpen={setDoctorOpen}
+                value={doctorValue}
+                setValue={setDoctorValue}
+                items={doctorItems}
+                setItems={setDoctorItems}
+                placeholder="Sélectionnez un médecin*"
+                style={styles.input}
+                containerStyle={{ width: '100%', marginBottom: 15 }}
+                zIndex={1000}
+              />
+
+              {/* Sélection Oui/Non pour "Traitement en cours" */}
+              <Text style={styles.sectionTitle}>Traitement en cours</Text>
+              <DropDownPicker
+                open={processingOpen}
+                value={processingValue}
+                items={processingItems}
+                setOpen={setProcessingOpen}
+                setItems={setProcessingItems}
+                setValue={setProcessingValue}
+                disabled={true}
+                placeholder="Traitement en cours "
+                style={styles.pickerDisabled}
+                listMode="MODAL"
+              />
+
+              <Text style={styles.sectionTitle}>Médicament à prescrire</Text>
+              <TextInput
+                style={styles.inputDisabled}
+                placeholderTextColor="gray"
+                value={medicine}
+                onChangeText={setMedicine}
+                editable={false}
+              />
+
+              <Text style={styles.sectionTitle}>Suivi</Text>
+              <TextInput
+                style={[styles.inputDisabled, { height: 80, textAlignVertical: 'top' }]}
+                placeholderTextColor="gray"
+                multiline
+                value={note}
+                editable={false}
+                onChangeText={setNote}
+              />
+
+              <Text style={styles.sectionTitle}>Contact</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Téléphone"
+                keyboardType="phone-pad"
+                placeholderTextColor="gray"
+                value={phone}
+                onChangeText={setPhone}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                keyboardType="email-address"
+                placeholderTextColor="gray"
+                value={email}
+                onChangeText={setEmail}
+              />
+
+              {/* Champ Date "Rendez-vous" */}
+              <Text style={styles.sectionTitle}>Prise de rendez-vous</Text>
+              <TouchableOpacity onPress={showDatePicker} style={styles.input}>
+                <Text style={{ color: appointment ? 'black' : 'gray', fontSize: 16 }}>
+                  {appointment ? formatCustomDate(appointment) : 'Rendez-vous'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Affichage du DateTimePicker */}
+              {isDatePickerVisible && (
+                <View style={{ alignItems: 'center' }}>
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="datetime"
+                    display={Platform.OS === 'android' ? 'default' : 'spinner'}
+                    onChange={onChangeDate}
+                    locale="fr-FR"
+                    textColor="black"
+                    style={styles.datePicker}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setAppointment(tempDate);
+                      hideDatePicker();
+                    }}
+                    style={[styles.button, { marginTop: 10 }]}>
+                    <Text style={styles.buttonDateValidate}>Valider la date</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <Text style={styles.sectionTitle}>Etat du patient</Text>
+              <View style={{ zIndex: 900 }}>
+                <DropDownPicker
+                  open={statusOpen}
+                  value={status}
+                  items={statusItems}
+                  setOpen={setStatusOpen}
+                  setItems={setStatusItems}
+                  setValue={setStatus}
+                  placeholder="Sélectionnez un statut"
+                  style={styles.picker}
+                  listMode="MODAL" // Pour éviter les erreurs de VirtualizedList dans ScrollView
+                />
+              </View>
+            </ScrollView>
+            <View style={{ backgroundColor: '#f0f0f0', padding: 5, borderRadius: 5 }}>
+              <Text style={styles.sectionTitleInfo}>
+                Les champs grisés sont uniquement modifiables par le médecin responsable du patient.
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.button, !isValid && styles.buttonDisabled]}
+                disabled={!isValid}
+                onPress={handleAdd}>
+                <Text style={styles.buttonText}>Valider</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </KeyboardAwareScrollView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  inputDisabled: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'skyblue',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    fontSize: 15,
+    backgroundColor: 'lightgray',
+    color: 'gray',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
+  pickerDisabled: {
+    width: '100%',
+    minHeight: 44,
+    borderColor: 'skyblue',
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: 'lightgray',
+    color: 'gray',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
+  modalActions: {
+    justifyContent: 'center',
+    marginTop: 10,
+    gap: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 18,
+    borderRadius: 16,
+    width: '92%',
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  sectionTitle: {
+    fontStyle: 'italic',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#666',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    marginTop: 12,
+    marginLeft: 2,
+  },
+  sectionTitleInfo: {
+    fontStyle: 'italic',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#666',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    marginTop: 12,
+    marginLeft: 2,
+  },
   backdrop: {
     flex: 1,
     justifyContent: 'center',

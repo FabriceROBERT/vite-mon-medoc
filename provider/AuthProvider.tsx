@@ -29,7 +29,6 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Erreur de chargement du user :', error);
       } finally {
         setLoading(false);
       }

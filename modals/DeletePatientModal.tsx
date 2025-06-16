@@ -10,18 +10,6 @@ type DeletePatientModalProps = {
     id: number;
     nom: string;
     prenom: string;
-    age: number;
-    poids: number;
-    taille: number;
-    traitement_en_cours: string;
-    medicament: string;
-    medecin: string;
-    notes: string;
-    rdv: Date;
-    statut: string;
-    numero_de_telephone: number;
-    mail: string;
-    created_at: Date;
   } | null;
   onClose: () => void;
   onPatientDeleted: () => void;

@@ -15,6 +15,8 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import axios from 'axios';
 // @ts-ignore
 import { BASE_URL } from '@env';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useAuth } from '../context/useAuth';
 
 type EditPatientModalProps = {
   visible: boolean;
@@ -33,7 +35,7 @@ type EditPatientModalProps = {
     statut: string;
     numero_de_telephone: number;
     mail: string;
-    created_at: Date;
+    created_at?: Date;
   } | null;
   onClose: () => void;
   onPatientUpdated: () => void;
@@ -45,7 +47,17 @@ export default function EditPatientModal({
   onClose,
   onPatientUpdated,
 }: EditPatientModalProps) {
-  // États pour chaque champ
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusItems, setStatusItems] = useState([
+    { label: 'En cours de traitement', value: 'en_cours' },
+    { label: 'Guéri', value: 'guéri' },
+    { label: 'À surveiller', value: 'a_surveiller' },
+    { label: 'Stable', value: 'stable' },
+    { label: 'Critique', value: 'critique' },
+    { label: 'Mort', value: 'mort' },
+  ]);
+  const [role, setRole] = useState('');
+  const { user } = useAuth();
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [age, setAge] = useState('');
@@ -56,21 +68,56 @@ export default function EditPatientModal({
   const [notes, setNotes] = useState('');
   const [rdv, setRdv] = useState<Date | null>(null);
   const [statut, setStatut] = useState('');
-  const [numeroDeTelephone, setNumeroDeTelephone] = useState('');
+  const [numeroDeTelephone, setNumeroDeTelephone] = useState<string>('');
   const [mail, setMail] = useState('');
   type PickerItem = { label: string; value: string };
   const [medecinList, setMedecinList] = useState<PickerItem[]>([]);
   const [openMedecin, setOpenMedecin] = useState(false);
   const [medecinUsername, setMedecinUsername] = useState('');
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+  const [open, setOpen] = useState(false);
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      setRdv(selectedDate);
+    }
+  };
+
+  const formatCustomDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+
+    const formatted = new Intl.DateTimeFormat('fr-FR', options).format(date);
+    const withH = formatted.replace(/(\d{2}):(\d{2})/, '$1h$2');
+
+    return `Le ${withH}`;
+  };
+
   const [traitementEnCours, setTraitementEnCours] = useState<string | null>(null);
   const [items, setItems] = useState([
     { label: 'Oui', value: 'true' },
     { label: 'Non', value: 'false' },
   ]);
 
-  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const type = user?.user?.type;
+    if (!type) return;
 
-  // Mise à jour des champs lorsque "patient" change
+    if (type === 'medecin') {
+      setRole('medecin');
+    } else if (type === 'admin') {
+      setRole('admin');
+    } else {
+      setRole('rh');
+    }
+  }, [user]);
   useEffect(() => {
     if (patient) {
       setNom(patient.nom);
@@ -99,25 +146,25 @@ export default function EditPatientModal({
           setMedecinId(response.data.id.toString());
           setMedecinUsername(response.data.username);
         })
-        .catch((error) => {
-          console.error('Erreur lors de la récupération du médecin :', error);
-        });
+        .catch((error) => {});
     }
   }, [patient]);
 
   useEffect(() => {
-    // Si le modal est visible, on récupère la liste des médecins
     if (visible) {
       axios
-        .get(`http://${BASE_URL}/api/users?role=medecin`)
+        .get(`http://${BASE_URL}/api/users`)
         .then((response) => {
-          const data = response.data.map((med) => ({
-            label: `${med.username}`, // ou med.username
+          const medecins = response.data.filter((m: any) => m.type === 'medecin'); // Sélectionne tous les médecins
+
+          const formattedMedecins = medecins.map((med) => ({
+            label: med.username,
             value: med.id.toString(),
           }));
-          setMedecinList(data);
+
+          setMedecinList(formattedMedecins);
         })
-        .catch((err) => {
+        .catch(() => {
           setMedecinList([]);
         });
     }
@@ -127,22 +174,27 @@ export default function EditPatientModal({
   const isDisabled = !nom.trim() || !prenom.trim() || !age.trim();
 
   const modify_patient = () => {
+    const updatedPatientData = {
+      nom,
+      prenom,
+      age: age ? Number(age) : undefined,
+      poids: poids ? Number(poids) : undefined,
+      taille: taille ? Number(taille) : undefined,
+      traitement_en_cours: traitementEnCours || undefined,
+      medicament: medicament || undefined,
+      medecin_id: medecinId ? Number(medecinId) : undefined,
+      notes: notes || undefined,
+      rdv: rdv ? rdv.toISOString() : undefined,
+      statut: statut || undefined,
+      numero_de_telephone: numeroDeTelephone ? numeroDeTelephone : undefined,
+      mail: mail || undefined,
+    };
+
     if (!patient) return;
     axios
-      .put(`http://${BASE_URL}/api/patients/${patient.id}`, {
-        nom,
-        prenom,
-        age: age ? Number(age) : null,
-        poids: poids ? Number(poids) : null,
-        taille: taille ? Number(taille) : null,
-        traitement_en_cours: traitementEnCours ? traitementEnCours : null,
-        medicament: medicament ? medicament : null,
-        medecin_id: medecinId ? Number(medecinId) : null,
-        notes: notes ? notes : null,
-        rdv: rdv ? rdv.toISOString() : null,
-        statut: statut ? statut : null,
-        numero_de_telephone: numeroDeTelephone ? Number(numeroDeTelephone) : null,
-        mail: mail ? mail : null,
+      .put(`http://${BASE_URL}/api/patients/${patient.id}`, updatedPatientData)
+      .catch((error) => {
+        Alert.alert('Erreur', 'Échec de la mise à jour du patient. Veuillez réessayer.');
       })
       .then(() => {
         onPatientUpdated();
@@ -186,6 +238,8 @@ export default function EditPatientModal({
                 placeholderTextColor="grey"
                 onChangeText={setPrenom}
               />
+              <Text style={styles.sectionTitle}>Âge</Text>
+
               <TextInput
                 style={styles.input}
                 keyboardType="numeric"
@@ -214,30 +268,8 @@ export default function EditPatientModal({
                 onChangeText={setTaille}
               />
 
-              {/* Traitement */}
-              <Text style={styles.sectionTitle}>Traitement</Text>
-              <DropDownPicker
-                open={open}
-                value={traitementEnCours}
-                items={items}
-                setOpen={setOpen}
-                setItems={setItems}
-                setValue={setTraitementEnCours}
-                placeholder="Traitement en cours"
-                style={styles.picker}
-                dropDownContainerStyle={{ zIndex: 1001 }}
-                zIndex={1001}
-              />
-              <TextInput
-                style={styles.input}
-                value={medicament}
-                placeholder="Médicament"
-                placeholderTextColor="grey"
-                onChangeText={setMedicament}
-              />
-
               {/* Médecin */}
-              <Text style={styles.sectionTitle}>Médecin</Text>
+              <Text style={styles.sectionTitle}>Pris en charge par le médecin</Text>
               <DropDownPicker
                 open={openMedecin}
                 value={medecinId}
@@ -249,32 +281,67 @@ export default function EditPatientModal({
                 style={styles.picker}
                 containerStyle={{ marginBottom: 15 }}
                 dropDownContainerStyle={{ zIndex: 1000 }}
-                zIndex={1000}
+              />
+
+              {/* Traitement */}
+              <Text style={styles.sectionTitle}>Traitement en cours</Text>
+              <DropDownPicker
+                open={open}
+                value={traitementEnCours}
+                items={items}
+                setOpen={setOpen}
+                setItems={setItems}
+                disabled={role !== 'medecin'}
+                setValue={setTraitementEnCours}
+                placeholder="Traitement en cours"
+                style={role === 'medecin' ? styles.picker : styles.pickerDisabled}
+                dropDownContainerStyle={{ zIndex: 1001 }}
+                zIndex={1001}
+              />
+
+              <Text style={styles.sectionTitle}>Médicament prescrit</Text>
+
+              <TextInput
+                style={role === 'medecin' ? styles.input : styles.inputDisabled}
+                value={medicament}
+                placeholder="Médicament"
+                placeholderTextColor="grey"
+                onChangeText={setMedicament}
+                editable={role === 'medecin'}
               />
 
               {/* Suivi */}
               <Text style={styles.sectionTitle}>Suivi</Text>
               <TextInput
-                style={styles.input}
+                style={role === 'medecin' ? styles.input : styles.inputDisabled}
                 value={notes}
                 placeholder="Notes"
                 placeholderTextColor="grey"
                 onChangeText={setNotes}
                 multiline
-              />
-              <TextInput
-                style={styles.input}
-                value={statut}
-                placeholder="Statut"
-                placeholderTextColor="grey"
-                onChangeText={setStatut}
+                editable={role === 'medecin'}
               />
 
+              <Text style={styles.sectionTitle}>Etat du patient</Text>
+
+              <DropDownPicker
+                open={statusOpen}
+                value={statut}
+                items={statusItems}
+                setOpen={setStatusOpen}
+                setItems={setStatusItems}
+                setValue={setStatut}
+                placeholder="Etat du patient"
+                style={role === 'medecin' ? styles.picker : styles.pickerDisabled}
+                disabled={role !== 'medecin'}
+                containerStyle={{ marginBottom: 15 }}
+                dropDownContainerStyle={{ zIndex: 1000 }}
+              />
               {/* Contact */}
               <Text style={styles.sectionTitle}>Contact</Text>
               <TextInput
                 style={styles.input}
-                keyboardType="numeric"
+                keyboardType="phone-pad"
                 value={numeroDeTelephone}
                 placeholder="Téléphone"
                 placeholderTextColor="grey"
@@ -289,19 +356,47 @@ export default function EditPatientModal({
                 keyboardType="email-address"
               />
 
-              {/* Rendez-vous */}
               <Text style={styles.sectionTitle}>Rendez-vous</Text>
-              <TextInput
-                style={styles.input}
-                value={rdv ? rdv.toISOString() : ''}
-                placeholder="Date/heure (format ISO)"
-                onChangeText={(text) => {
-                  const parsedDate = Date.parse(text);
-                  if (!isNaN(parsedDate)) setRdv(new Date(parsedDate));
-                  else setRdv(null);
-                }}
-              />
+              {/* Rendez-vous */}
+              <TouchableOpacity onPress={showDatePicker} style={styles.input}>
+                <Text style={{ color: rdv ? 'black' : 'gray', fontSize: 16 }}>
+                  {' '}
+                  {rdv ? formatCustomDate(rdv) : 'Aucun rendez-vous'}
+                </Text>
+              </TouchableOpacity>
+              {/* Affichage du DateTimePicker */}
+              {isDatePickerVisible && (
+                <View style={{ alignItems: 'center' }}>
+                  <DateTimePicker
+                    value={rdv || new Date()}
+                    mode="datetime"
+                    display={Platform.OS === 'android' ? 'default' : 'spinner'}
+                    onChange={onChangeDate}
+                    locale="fr-FR"
+                    textColor="black"
+                    style={styles.datePicker}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setRdv(rdv);
+                      hideDatePicker();
+                    }}
+                    style={[styles.button, { marginTop: 10 }]}>
+                    <Text style={styles.buttonDateValidate}>Valider la date</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </ScrollView>
+            {role !== 'medecin' && (
+              <>
+                <View style={{ backgroundColor: '#f0f0f0', padding: 5, borderRadius: 5 }}>
+                  <Text style={styles.sectionTitleInfo}>
+                    Les champs grisés sont uniquement modifiables par le médecin responsable du
+                    patient.
+                  </Text>
+                </View>
+              </>
+            )}
 
             {/* Boutons toujours visibles */}
             <View style={styles.modalActions}>
@@ -323,6 +418,26 @@ export default function EditPatientModal({
 }
 
 const styles = StyleSheet.create({
+  buttonDateValidate: {
+    color: 'white',
+    backgroundColor: 'skyblue',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: 'skyblue',
+    padding: 5,
+    paddingHorizontal: 20,
+    marginHorizontal: 10,
+    marginBottom: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  datePicker: {
+    width: 200,
+    height: 200,
+  },
   buttonText: {
     color: 'white',
     textAlign: 'center',
@@ -354,7 +469,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 14,
+    fontStyle: 'italic',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#666',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    marginTop: 12,
+    marginLeft: 2,
+  },
+  sectionTitleInfo: {
+    fontStyle: 'italic',
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#666',
     alignSelf: 'flex-start',
@@ -372,12 +498,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: '#fafcff',
   },
+  inputDisabled: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'skyblue',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    fontSize: 15,
+    backgroundColor: 'lightgray',
+    color: 'gray',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
   picker: {
     width: '100%',
     minHeight: 44,
     borderColor: 'skyblue',
     marginBottom: 10,
     borderRadius: 8,
+  },
+  pickerDisabled: {
+    zIndex: 1,
+    width: '100%',
+    minHeight: 44,
+    borderColor: 'skyblue',
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: 'lightgray',
+    color: 'gray',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
   },
   modalActions: {
     flexDirection: 'row',
