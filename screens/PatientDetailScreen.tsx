@@ -162,7 +162,11 @@ export default function PatientDetailScreen({ route }: PatientDetailScreenProps)
       <Text style={styles.info}>
         Mail :{' '}
         {patient.mail ? (
-          <Text style={styles.data}>{patient.mail}</Text>
+          patient.mail.length > 20 ? (
+            patient.mail.substring(0, 15) + '...'
+          ) : (
+            patient.mail
+          )
         ) : (
           <Text style={styles.noData}>Non renseigné</Text>
         )}

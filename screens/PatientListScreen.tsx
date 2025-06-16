@@ -141,7 +141,16 @@ export default function PatientListScreen() {
             )}
           </Text>
           <Text style={styles.info}>
-            Mail : {item.mail ? item.mail : <Text style={styles.noData}>Non renseigné</Text>}
+            Mail :{' '}
+            {item.mail ? (
+              item.mail.length > 20 ? (
+                item.mail.substring(0, 15) + '...'
+              ) : (
+                item.mail
+              )
+            ) : (
+              <Text style={styles.noData}>Non renseigné</Text>
+            )}
           </Text>
         </View>
         <View style={styles.buttonContainer}>
