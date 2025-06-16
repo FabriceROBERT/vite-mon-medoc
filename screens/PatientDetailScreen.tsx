@@ -143,7 +143,9 @@ export default function PatientDetailScreen({ route }: PatientDetailScreenProps)
           </Text>
         </Text>
       ) : (
-        <Text style={styles.noData}>Aucune date prévue</Text>
+        <View style={{ marginHorizontal: 10, marginTop: 20 }}>
+          <Text style={styles.noData}>Aucune date prévue</Text>
+        </View>
       )}
       <Text style={styles.info}>Statut :</Text>
       <View style={styles.labelContainer}>
@@ -176,6 +178,7 @@ export default function PatientDetailScreen({ route }: PatientDetailScreenProps)
 }
 const styles = StyleSheet.create({
   header: {
+    marginTop: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

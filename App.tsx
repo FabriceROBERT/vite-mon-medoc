@@ -42,7 +42,11 @@ function NavigatorWrapper() {
       />
       <Stack.Screen name="AdminScreen" options={{ headerShown: false }} component={AdminScreen} />
       <Stack.Screen name="DoctorScreen" options={{ headerShown: false }} component={DoctorScreen} />
-      <Stack.Screen name="PatientDetailScreen" component={PatientDetailScreen} />
+      <Stack.Screen
+        name="PatientDetailScreen"
+        options={{ headerShown: false }}
+        component={PatientDetailScreen}
+      />
     </Stack.Navigator>
   );
 }
