@@ -1,17 +1,57 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+// @ts-ignore
+import { BASE_URL } from '@env';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import axios from 'axios';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useAuth } from '../context/useAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const { user, login, logout, loading } = useAuth();
 
-  const handleLogin = () => {
-    console.log('Email:', email);
-    console.log('Mot de passe:', password);
-    navigation.navigate('HRScreen' as never);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async () => {
+    try {
+      setIsSubmitting(true);
+      const response = await axios.post(`http://${BASE_URL}/api/users/login`, {
+        username,
+        password,
+      });
+
+      if (response.status === 200 && response.data.token) {
+        await AsyncStorage.setItem('token', response.data.token);
+        await login(response.data);
+      } else {
+        Alert.alert('Erreur', "Type d'utilisateur non reconnu.");
+      }
+    } catch (error) {
+      Alert.alert("Nom d'utilisateur ou mot de passe incorrect.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (loading || !user) return;
+
+    const type = user?.user?.type;
+    if (!type) return;
+
+    if (type === 'rh') {
+      navigation.navigate('HRScreen' as never);
+    } else if (type === 'medecin') {
+      navigation.navigate('DoctorScreen' as never);
+    } else if (type === 'admin') {
+      navigation.navigate('AdminScreen' as never);
+    } else {
+      Alert.alert('Erreur', "Type d'utilisateur non reconnu.");
+    }
+  }, [user, loading]);
 
   return (
     <View style={styles.container}>
@@ -19,10 +59,9 @@ export default function LoginScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="username"
+        value={username}
+        onChangeText={setUsername}
       />
 
       <TextInput
